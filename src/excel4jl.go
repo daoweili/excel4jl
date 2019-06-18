@@ -11,6 +11,7 @@ import (
 
 var usage = func() {
 	fmt.Println("USAGE: excel4jl command [arguments] ...")
+	fmt.Println("example: excel4jl a.xlsx weight.xlsx ")
 }
 
 var heads = []string{"内部订单号", "订单类型", "线上订单号", "店铺", "买家账号",
@@ -80,7 +81,7 @@ type JlExcel struct {
 }
 
 func readExcel(file *excelize.File) map[string][]*JlExcel {
-	resultMap := make(map[string][]*JlExcel, 0)
+	resultMap := make(map[string][]*JlExcel, 256)
 	for index, name := range file.GetSheetMap() {
 		fmt.Printf("handler index : %d, name : %s \n", index, name)
 		rows, err := file.GetRows(name)
@@ -195,17 +196,40 @@ func setJlExcelRow(jlExcel *JlExcel, index, sheet string, file *excelize.File) {
 
 }
 
-func IsFileExist(filename string) bool {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
+func IsFileExist(fileName string) bool {
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		return false
 	}
 	return true
 }
 
+/**
+	读取重量表
+**/
+func readWeight(fileName string) map[string]float64 {
+	resultMap := make(map[string]float64, 256)
+	file, err := excelize.OpenFile(fileName)
+	if err != nil {
+		fmt.Println(err)
+		return resultMap
+	}
+	firstSheetName := file.GetSheetName(1)
+	rows, err := file.GetRows(firstSheetName)
+	printErr(err)
+	for _, row := range rows {
+		model := strings.TrimSpace(row[0])
+		model = strings.ReplaceAll(model, "【", "")
+		model = strings.ReplaceAll(model, "】", "")
+		resultMap[model], err = strconv.ParseFloat(row[1], 64)
+		printErr(err)
+	}
+	return resultMap
+}
+
 func main() {
 	args := os.Args[1:]
 	fmt.Println("args: ", args)
-	if len(args) != 1 {
+	if len(args) != 2 {
 		usage()
 		os.Exit(0)
 	}
@@ -215,18 +239,25 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	//读取计算的excel内容
 	resultMap := readExcel(f)
+	//读取型号重量表
+	weightMap := readWeight(args[1])
 
 	for k, sheetContext := range resultMap {
 		fmt.Println("sheet name : ", k)
 		for i := 0; i < len(sheetContext)-1; i++ {
 			jlExcel := sheetContext[i]
+			weight := weightMap[jlExcel.styleCode]
+			jlExcel.weight = float64(jlExcel.realWage) * weight
 			for j := 0; j < len(sheetContext)-1; j++ {
 				cmJlExcel := sheetContext[j]
 				if i == j {
 					continue
 				}
 				if jlExcel.trackingNo == cmJlExcel.trackingNo {
+					weight = weightMap[cmJlExcel.styleCode]
+					cmJlExcel.weight = float64(cmJlExcel.realWage) * weight
 					jlExcel.weight += cmJlExcel.weight
 					cmJlExcel.weight = 0
 					if jlExcel.freightExpense == 0 {
