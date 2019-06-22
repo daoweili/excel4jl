@@ -226,10 +226,17 @@ func readWeight(fileName string) map[string]float64 {
 	return resultMap
 }
 
+func checkCalcWeight(weightMap map[string]float64) bool {
+	if len(weightMap) > 0 {
+		return true
+	}
+	return false
+}
+
 func main() {
 	args := os.Args[1:]
 	fmt.Println("args: ", args)
-	if len(args) != 2 {
+	if len(args) < 1 {
 		usage()
 		os.Exit(0)
 	}
@@ -242,22 +249,32 @@ func main() {
 	//读取计算的excel内容
 	resultMap := readExcel(f)
 	//读取型号重量表
-	weightMap := readWeight(args[1])
-
+	var weightPath string
+	if len(args) > 1 {
+		weightPath = args[1]
+	}
+	var weightMap map[string]float64
+	if weightPath != "" {
+		weightMap = readWeight(weightPath)
+	}
 	for k, sheetContext := range resultMap {
 		fmt.Println("sheet name : ", k)
 		for i := 0; i < len(sheetContext)-1; i++ {
 			jlExcel := sheetContext[i]
-			weight := weightMap[jlExcel.styleCode]
-			jlExcel.weight = float64(jlExcel.realWage) * weight
+			if checkCalcWeight(weightMap) {
+				weight := weightMap[jlExcel.styleCode]
+				jlExcel.weight = float64(jlExcel.realWage) * weight
+			}
 			for j := 0; j < len(sheetContext)-1; j++ {
 				cmJlExcel := sheetContext[j]
 				if i == j {
 					continue
 				}
 				if jlExcel.trackingNo == cmJlExcel.trackingNo {
-					weight = weightMap[cmJlExcel.styleCode]
-					cmJlExcel.weight = float64(cmJlExcel.realWage) * weight
+					if checkCalcWeight(weightMap) {
+						weight := weightMap[cmJlExcel.styleCode]
+						cmJlExcel.weight = float64(cmJlExcel.realWage) * weight
+					}
 					jlExcel.weight += cmJlExcel.weight
 					cmJlExcel.weight = 0
 					if jlExcel.freightExpense == 0 {
