@@ -21,7 +21,7 @@ var heads = []string{"内部订单号", "订单类型", "线上订单号", "店�
 var cellNames = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "G", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"}
 
 const firstWeight = 3
-const firstWeightPrice = 5
+const firstWeightPrice = 5.2
 
 var renewalFeePrice = map[string]int{
 	"广东":  1,
@@ -33,6 +33,7 @@ var renewalFeePrice = map[string]int{
 	"福建":  4,
 	"湖南":  4,
 	"湖北":  4,
+	"安徽":  4,
 	"河南":  5,
 	"河北":  5,
 	"海南":  5,
@@ -47,6 +48,7 @@ var renewalFeePrice = map[string]int{
 	"陕西":  6,
 	"黑龙江": 6,
 	"辽宁":  6,
+	"吉林":  6,
 	"甘肃":  10,
 	"青海":  10,
 	"宁夏":  10,
